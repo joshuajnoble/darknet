@@ -35,8 +35,6 @@ void binarize_weights(float *weights, int n, int size, float *binary);
 void swap_binary(convolutional_layer *l);
 void binarize_weights2(float *weights, int n, int size, char *binary, float *scales);
 
-void binary_align_weights(convolutional_layer *l, size_t ldb_align);
-
 void backward_convolutional_layer(convolutional_layer layer, network_state state);
 
 void add_bias(float *output, float *biases, int batch, int n, int size);

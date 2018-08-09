@@ -17,6 +17,7 @@ extern void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *
 extern void run_voxel(int argc, char **argv);
 extern void run_yolo(int argc, char **argv);
 extern void run_detector(int argc, char **argv);
+extern void run_detector_kinect(int argc, char **argv);
 extern void run_coco(int argc, char **argv);
 extern void run_writing(int argc, char **argv);
 extern void run_captcha(int argc, char **argv);
@@ -40,13 +41,13 @@ void average(int argc, char *argv[])
     network net = parse_network_cfg(cfgfile);
     network sum = parse_network_cfg(cfgfile);
 
-    char *weightfile = argv[4];
+    char *weightfile = argv[4];   
     load_weights(&sum, weightfile);
 
     int i, j;
     int n = argc - 5;
     for(i = 0; i < n; ++i){
-        weightfile = argv[i+5];
+        weightfile = argv[i+5];   
         load_weights(&net, weightfile);
         for(j = 0; j < net.n; ++j){
             layer l = net.layers[j];
@@ -347,7 +348,7 @@ void visualize(char *cfgfile, char *weightfile)
     cvWaitKey(0);
 #endif
 }
-
+/*
 int main(int argc, char **argv)
 {
 #ifdef _DEBUG
@@ -377,7 +378,6 @@ int main(int argc, char **argv)
 #else
     if(gpu_index >= 0){
         cuda_set_device(gpu_index);
-        check_error(cudaSetDeviceFlags(cudaDeviceScheduleBlockingSync));
     }
 #endif
 
@@ -459,4 +459,28 @@ int main(int argc, char **argv)
     }
     return 0;
 }
+*/
 
+int main(int argc, char **argv)
+{
+#ifdef _DEBUG
+    _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+#endif
+
+    gpu_index = find_int_arg(argc, argv, "-i", 0);
+    if (find_arg(argc, argv, "-nogpu")) {
+        gpu_index = -1;
+    }
+
+#ifndef GPU
+    gpu_index = -1;
+#else
+    if (gpu_index >= 0) {
+        cuda_set_device(gpu_index);
+    }
+#endif
+
+
+
+    run_detector_kinect(0, NULL);
+}

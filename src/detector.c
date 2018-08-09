@@ -568,7 +568,6 @@ void validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, float
     }
     //set_batch_network(&net, 1);
     fuse_conv_batchnorm(net);
-    calculate_binary_weights(net);
     srand(time(0));
 
     list *plist = get_paths(valid_images);
@@ -1095,7 +1094,6 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
     }
     //set_batch_network(&net, 1);
     fuse_conv_batchnorm(net);
-    calculate_binary_weights(net);
     if (net.layers[net.n - 1].classes != names_size) {
         printf(" Error: in the file %s number of names %d that isn't equal to classes=%d in the file %s \n",
             name_list, names_size, net.layers[net.n - 1].classes, cfgfile);
@@ -1280,4 +1278,84 @@ void run_detector(int argc, char **argv)
         free_list(options);
     }
     else printf(" There isn't such command: %s", argv[2]);
+}
+
+
+void run_detector_kinect(int argc, char **argv)
+{
+    int dont_show = find_arg(argc, argv, "-dont_show");
+    int show = find_arg(argc, argv, "-show");
+    int http_stream_port = find_int_arg(argc, argv, "-http_port", -1);
+    char *out_filename = find_char_arg(argc, argv, "-out_filename", 0);
+    char *outfile = find_char_arg(argc, argv, "-out", 0);
+    char *prefix = find_char_arg(argc, argv, "-prefix", 0);
+    float thresh = find_float_arg(argc, argv, "-thresh", .25);    // 0.24
+    float hier_thresh = find_float_arg(argc, argv, "-hier", .5);
+    int cam_index = find_int_arg(argc, argv, "-c", 0);
+    int frame_skip = find_int_arg(argc, argv, "-s", 0);
+    int num_of_clusters = find_int_arg(argc, argv, "-num_of_clusters", 5);
+    int width = find_int_arg(argc, argv, "-width", -1);
+    int height = find_int_arg(argc, argv, "-height", -1);
+    // extended output in test mode (output of rect bound coords)
+    // and for recall mode (extended output table-like format with results for best_class fit)
+    int ext_output = find_arg(argc, argv, "-ext_output");
+    int save_labels = find_arg(argc, argv, "-save_labels");
+    /*if (argc < 4) {
+        fprintf(stderr, "usage: %s %s [train/test/valid] [cfg] [weights (optional)]\n", argv[0], argv[1]);
+        return;
+    }*/
+    char *gpu_list = find_char_arg(argc, argv, "-gpus", 0);
+    int *gpus = 0;
+    int gpu = 0;
+    int ngpus = 0;
+    if (gpu_list) {
+        printf("%s\n", gpu_list);
+        int len = strlen(gpu_list);
+        ngpus = 1;
+        int i;
+        for (i = 0; i < len; ++i) {
+            if (gpu_list[i] == ',') ++ngpus;
+        }
+        gpus = calloc(ngpus, sizeof(int));
+        for (i = 0; i < ngpus; ++i) {
+            gpus[i] = atoi(gpu_list);
+            gpu_list = strchr(gpu_list, ',') + 1;
+        }
+    }
+    else {
+        gpu = gpu_index;
+        gpus = &gpu;
+        ngpus = 1;
+    }
+
+    int clear = find_arg(argc, argv, "-clear");
+
+    char *datacfg = "x64/cfg/coco.data";  //argv[3];
+    char *cfg = "x64/cfg/yolov2.cfg"; // argv[4];
+    char *weights = "x64/yolov3.weights"; // (argc > 5) ? argv[5] : 0;
+    //if (weights)
+    //    if (strlen(weights) > 0)
+    //        if (weights[strlen(weights) - 1] == 0x0d) weights[strlen(weights) - 1] = 0;
+    char *filename = "x64/data/dog.jpg"; // (argc > 6) ? argv[6] : 0;
+    //if (0 == strcmp(argv[2], "test")) test_detector(datacfg, cfg, weights, filename, thresh, hier_thresh, dont_show, ext_output, save_labels);
+    //else if (0 == strcmp(argv[2], "train")) train_detector(datacfg, cfg, weights, gpus, ngpus, clear, dont_show);
+    //else if (0 == strcmp(argv[2], "valid")) validate_detector(datacfg, cfg, weights, outfile);
+    //else if (0 == strcmp(argv[2], "recall")) validate_detector_recall(datacfg, cfg, weights);
+    //else if (0 == strcmp(argv[2], "map")) validate_detector_map(datacfg, cfg, weights, thresh);
+    //else if (0 == strcmp(argv[2], "calc_anchors")) calc_anchors(datacfg, num_of_clusters, width, height, show);
+    //else if (0 == strcmp(argv[2], "demo")) {
+        list *options = read_data_cfg(datacfg);
+        int classes = option_find_int(options, "classes", 20);
+        char *name_list = option_find_str(options, "names", "data/names.list");
+        char **names = get_labels("x64/data/coco.names"); //char **names = get_labels(name_list);
+        //if (filename)
+        //    if (strlen(filename) > 0)
+        //        if (filename[strlen(filename) - 1] == 0x0d) filename[strlen(filename) - 1] = 0;
+        demoKinect(cfg, weights, thresh, hier_thresh, cam_index, filename, names, classes, frame_skip, prefix, out_filename,
+            http_stream_port, dont_show, ext_output);
+
+        free_list_contents_kvp(options);
+        free_list(options);
+    //}
+    //else printf(" There isn't such command: %s", argv[2]);
 }
